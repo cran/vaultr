@@ -1,3 +1,11 @@
+## 1.0.4
+
+* `vaultr::vault_resolve_secrets` (and `$read` in the kv1 secrets engine) provide more information about what was being read at the point of failure (VIMC-3437)
+
+## 1.0.3
+
+* New convenience argument to `vaultr::vault_resolve_secrets` to pass in all connection arguments at once, designed to make this easier to use from scripts (VIMC-3397).
+
 ## 1.0.2
 
 * First public release

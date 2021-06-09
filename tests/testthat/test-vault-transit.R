@@ -134,10 +134,14 @@ test_that("hash", {
     "e2a3ef7fdcbf9bb6b862ab2bcddc99b2decebca260ba60ae4c8d58e0")
   expect_equal(
     transit$hash(data, "sha2-384"),
-    "08a5d9c42fe137f6299adcf2a583501821f8e1b43648c57ba15c6a9558bd4dd4059edc9ea1303dbf207a8d36ae10b450")
+    paste0(
+      "08a5d9c42fe137f6299adcf2a583501821f8e1b43648c57ba15c6a9558bd4dd4059edc",
+      "9ea1303dbf207a8d36ae10b450"))
   expect_equal(
     transit$hash(data, "sha2-512"),
-    "700bfd8ed566cbdcec20ce39db81aec29d489286a97206cd99824d8db1c2e6b3468848766dd791febb1cf7c4dd7faecc98430891698fbe162badfa502186d380")
+    paste0(
+      "700bfd8ed566cbdcec20ce39db81aec29d489286a97206cd99824d8db1c2e6b3468848",
+      "766dd791febb1cf7c4dd7faecc98430891698fbe162badfa502186d380"))
 
   expect_equal(
     transit$hash(data, format = "base64"),
@@ -259,7 +263,8 @@ test_that("key derivation: encrypt/decrypt", {
   cyphertext <- transit$data_encrypt("test", plaintext, context = context)
   expect_identical(transit$data_decrypt("test", cyphertext, context = context),
                    plaintext)
-  expect_error(transit$data_decrypt("test", cyphertext), "context")
+  expect_error(transit$data_decrypt("test", cyphertext), "context",
+               class = "vault_invalid_request")
 })
 
 
@@ -324,5 +329,6 @@ test_that("key derivation: sign/verify", {
   expect_false(transit$verify_signature("test", data[-1], signature,
                                         context = context))
   expect_error(transit$verify_signature("test", data, signature),
-               "context")
+               "context",
+               class = "vault_internal_server_error")
 })
