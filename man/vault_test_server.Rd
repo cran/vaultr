@@ -3,16 +3,13 @@
 \name{vault_test_server}
 \alias{vault_test_server}
 \alias{vault_server_instance}
-\alias{vault_test_server_install}
 \title{Control a test vault server}
 \usage{
-vault_test_server(https = FALSE, init = TRUE, if_disabled = testthat::skip)
-
-vault_test_server_install(
-  path = NULL,
-  quiet = FALSE,
-  version = "1.0.0",
-  platform = vault_platform()
+vault_test_server(
+  https = FALSE,
+  init = TRUE,
+  if_disabled = testthat::skip,
+  quiet = FALSE
 )
 }
 \arguments{
@@ -29,22 +26,15 @@ not enabled.  The default, designed to be used within tests, is
 \code{testthat::skip}.  Alternatively, inspect the
 \verb{$enabled} property of the returned object.}
 
-\item{path}{Path in which to install vault test server. Leave as
-\code{NULL} to use the \code{VAULTR_TEST_SERVER_BIN_PATH} environment
-variable.}
-
-\item{quiet}{Suppress progress bars on install}
-
-\item{version}{Version of vault to install}
-
-\item{platform}{For testing, overwrite the platform vault is being
-installed on, with either "windows", "darwin" or "linux".}
+\item{quiet}{Logical, indicating if startup should be quiet and
+not print messages}
 }
 \description{
 Control a server for use with testing.  This is designed to be
 used only by other packages that wish to run tests against a vault
-server.  You will need to set \code{VAULTR_TEST_SERVER_BIN_PATH}
-to point at the directory containing the vault binary.
+server.  You will need to set \code{VAULTR_TEST_SERVER_BIN_PATH} to
+point at the directory containing the vault binary, to the binary
+itself, or to the value \code{auto} to try and find it on your \code{PATH}.
 }
 \details{
 Once created with \code{vault_test_server}, a server will stay
@@ -53,22 +43,6 @@ alive for as long as the R process is alive \emph{or} until the
 garbage collected.  Calling \verb{$kill()} will explicitly stop
 the server, but this is not strictly needed.  See below for
 methods to control the server instance.
-
-The function \code{vault_test_server_install} will install a test
-server, but \emph{only} if the user sets the following environmental
-variables:
-\itemize{
-\item \code{VAULTR_TEST_SERVER_INSTALL} to \code{"true"} to opt in to the
-download.
-\item \code{VAULTR_TEST_SERVER_BIN_PATH} to the directory where the binary
-should be downloaded to.
-\item \code{NOT_CRAN} to \code{"true"} to indicate this is not running on CRAN
-as it requires installation of a binary from a website.
-}
-
-This will download a ~100MB binary from https://vaultproject.io
-so use with care.  It is intended \emph{only} for use in automated
-testing environments.
 }
 \section{Warning}{
 
@@ -76,19 +50,10 @@ testing environments.
 Starting a server in test mode must \emph{not} be used for production
 under any circumstances.  As the name suggests,
 \code{vault_test_server} is a server suitable for \emph{tests} only and
-lacks any of the features required to make vault secure.  Please
-see https://www.vaultproject.io/docs/concepts/dev-server.html
-for more information
-
-
-
-The \code{vault_test_server_install} function will download a
-binary from HashiCorp in order to use a vault server.  Use this
-function with care.  The download will happen from
-https://releases.hashicorp.com/vault (over https).  This
-function is primarily designed to be used from continuous
-integration services only and for local use you are strongly
-recommended to curate your own installations.
+lacks any of the features required to make vault secure.  For
+more information, please see the the official Vault
+documentation on development servers:
+https://developer.hashicorp.com/vault/docs/concepts/dev-server
 }
 
 \examples{
@@ -166,7 +131,7 @@ https mode (read-only).}
 Create a \code{vault_server_instance} object. Not typically
 called by users.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{vault_server_instance$new(bin, port, https, init)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{vault_server_instance$new(bin, port, https, init, quiet = FALSE)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -179,6 +144,8 @@ called by users.
 \item{\code{https}}{Logical, indicating if we should use TLS/https}
 
 \item{\code{init}}{Logical, indicating if we should initialise}
+
+\item{\code{quiet}}{Logical, indicating if startup should be quiet}
 }
 \if{html}{\out{</div>}}
 }

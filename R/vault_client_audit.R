@@ -1,5 +1,5 @@
 ##' Interact with vault's audit devices.  For more details, see
-##' https://www.vaultproject.io/docs/audit/
+##' https://developer.hashicorp.com/vault/docs/audit
 ##'
 ##' @title Vault Audit Devices
 ##' @name vault_client_audit
@@ -48,8 +48,9 @@ vault_client_audit <- R6::R6Class(
     list = function() {
       dat <- private$api_client$GET("/sys/audit")
       cols <- c("path", "type", "description")
-      ret <- lapply(cols, function(v)
-        vcapply(dat$data, "[[", v, USE.NAMES = FALSE))
+      ret <- lapply(cols, function(v) {
+        vcapply(dat$data, "[[", v, USE.NAMES = FALSE)
+      })
       names(ret) <- cols
       as.data.frame(ret, stringsAsFactors = FALSE, check.names = FALSE)
     },

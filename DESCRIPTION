@@ -6,7 +6,7 @@ Authors@R: c(person("Rich", "FitzJohn", role = c("aut", "cre"),
              person("Imperial College of Science, Technology and Medicine",
                     role = "cph"))
 Title: Vault Client for Secrets and Sensitive Data
-Version: 1.1.1
+Version: 1.2.0
 Description: Provides an interface to a 'HashiCorp' vault server over
   its http API (typically these are self-hosted; see
   <https://www.vaultproject.io>).  This allows for secure storage and
@@ -21,16 +21,17 @@ BugReports: https://github.com/vimc/vaultr/issues
 SystemRequirements: vault
 Imports: R6, getPass, httr, jsonlite
 Suggests: knitr, mockery, processx, rmarkdown, testthat, withr
-RoxygenNote: 7.2.1
+RoxygenNote: 7.2.3
 Encoding: UTF-8
 VignetteBuilder: knitr
 Language: en-GB
+Config/testthat/edition: 3
 NeedsCompilation: no
-Packaged: 2022-08-22 08:30:49 UTC; rfitzjoh
+Packaged: 2023-11-09 11:17:25 UTC; rfitzjoh
 Author: Rich FitzJohn [aut, cre],
   Robert Ashton [aut],
   Wes Hinsley [aut],
   Imperial College of Science, Technology and Medicine [cph]
 Maintainer: Rich FitzJohn <rich.fitzjohn@gmail.com>
 Repository: CRAN
-Date/Publication: 2022-08-22 11:30:02 UTC
+Date/Publication: 2023-11-09 12:30:02 UTC

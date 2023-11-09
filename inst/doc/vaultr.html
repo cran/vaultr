@@ -12,7 +12,7 @@
 
 <meta name="author" content="Rich FitzJohn" />
 
-<meta name="date" content="2019-05-13" />
+<meta name="date" content="2023-11-09" />
 
 <title>vaultr</title>
 
@@ -25,6 +25,7 @@
   div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
   ul.task-list{list-style: none;}
     </style>
+
 
 
 <style type="text/css">
@@ -106,13 +107,20 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
   for (var i = 0; i < sheets.length; i++) {
     if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
     try { var rules = sheets[i].cssRules; } catch (e) { continue; }
-    for (var j = 0; j < rules.length; j++) {
+    var j = 0;
+    while (j < rules.length) {
       var rule = rules[j];
       // check if there is a div.sourceCode rule
-      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
       var style = rule.style.cssText;
       // check if color or background-color is set
-      if (rule.style.color === '' && rule.style.backgroundColor === '') continue;
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
       // replace div.sourceCode by a pre.sourceCode rule
       sheets[i].deleteRule(j);
       sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
@@ -318,7 +326,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 <h1 class="title toc-ignore">vaultr</h1>
 <h4 class="author">Rich FitzJohn</h4>
-<h4 class="date">2019-05-13</h4>
+<h4 class="date">2023-11-09</h4>
 
 
 
@@ -333,10 +341,8 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <p>(environment variables starting with <code>VAULT_</code> are shared with the vault cli, variables starting <code>VAULTR_</code> are specific to this package).</p>
 <p>in this vignette, these are already configured:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" title="1"><span class="kw">Sys.getenv</span>(<span class="kw">c</span>(<span class="st">&quot;VAULT_ADDR&quot;</span>, <span class="st">&quot;VAULT_TOKEN&quot;</span>, <span class="st">&quot;VAULTR_AUTH_METHOD&quot;</span>))</a></code></pre></div>
-<pre><code>##                             VAULT_ADDR
-##               &quot;http://127.0.0.1:18200&quot;
-##                            VAULT_TOKEN
-## &quot;e52f3694-4eca-aa7d-148e-8940713dd907&quot;
+<pre><code>##                             VAULT_ADDR                            VAULT_TOKEN
+##               &quot;http://127.0.0.1:18200&quot; &quot;1cd28503-0d1d-cb1d-80ce-30d3bfeb2e31&quot;
 ##                     VAULTR_AUTH_METHOD
 ##                                &quot;token&quot;</code></pre>
 <p>To access vault, first create a client:</p>
@@ -370,6 +376,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 ##   Command groups:
 ##     approle: Interact and configure vault&#39;s AppRole support
 ##     github: Interact and configure vault&#39;s github support
+##     ldap: Interact and configure vault&#39;s LDAP support
 ##     token: Interact and configure vault&#39;s token support
 ##     userpass: Interact and configure vault&#39;s userpass support
 ##   Commands:
@@ -425,15 +432,17 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 </div>
 <div id="github-github" class="section level3">
 <h3>GitHub (<code>github</code>)</h3>
-<p>Assume vault has been configured to support <a href="https://www.vaultproject.io/docs/auth/github.html">GitHub</a>, and that the environment variable <code>VAULT_AUTH_GITHUB_TOKEN</code> contains a personal access token for a team that has been configured to have vault access.</p>
-<p>This time login is a little slower because vault has to talk with GitHub to verify the user:</p>
+<p>Assuming that vault has been configured to support <a href="https://developer.hashicorp.com/vault/docs/auth/github">GitHub</a>, and that the environment variable <code>VAULT_AUTH_GITHUB_TOKEN</code> contains a personal access token for a team that has been configured to have vault access, then you can log in with github:</p>
 <div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb25-1" title="1">cl &lt;-<span class="st"> </span>vaultr<span class="op">::</span><span class="kw">vault_client</span>(<span class="dt">login =</span> <span class="st">&quot;github&quot;</span>)</a></code></pre></div>
-<pre><code>## ok, duration: 2764800 s (~32d)</code></pre>
-<div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb27-1" title="1">cl<span class="op">$</span><span class="kw">read</span>(<span class="st">&quot;secret/webserver&quot;</span>)</a></code></pre></div>
-<pre><code>## $password
-## [1] &quot;horsestaple&quot;</code></pre>
-<p>Subsequent logins are cached within a session though (based on the vault address)</p>
-<div class="sourceCode" id="cb29"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb29-1" title="1">cl &lt;-<span class="st"> </span>vaultr<span class="op">::</span><span class="kw">vault_client</span>(<span class="dt">login =</span> <span class="st">&quot;github&quot;</span>)</a></code></pre></div>
+<p>See <code>?vault_client_auth_github</code> for details.</p>
+</div>
+<div id="ldap-ldap" class="section level3">
+<h3>LDAP (<code>ldap</code>)</h3>
+<p>If your organisation uses LDAP and has configured vault to enable that at the server level, you can login using that by passing login = “ldap” along with your username:</p>
+<div class="sourceCode" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb26-1" title="1">cl &lt;-<span class="st"> </span>vaultr<span class="op">::</span><span class="kw">vault_client</span>(<span class="dt">login =</span> <span class="st">&quot;ldap&quot;</span>, <span class="dt">username =</span> <span class="st">&quot;alice&quot;</span>)</a>
+<a class="sourceLine" id="cb26-2" title="2"><span class="co">## Password for &#39;alice&#39;: ********</span></a>
+<a class="sourceLine" id="cb26-3" title="3"><span class="co">## ok, duration: 2764800 s (~32d)</span></a></code></pre></div>
+<p>This will authenticate with the LDAP server, and generate an appropriate token. See <code>?vault_client_auth_ldap</code> for details.</p>
 </div>
 </div>
 

@@ -1,12 +1,11 @@
-context("vault: auth: github")
-
 test_that("custom mount", {
-  srv <- vault_test_server()
+  skip_if_no_vaultr_test_github_pat()
+  srv <- test_vault_test_server()
   cl <- srv$client()
 
   cl$auth$enable("github", path = "github2")
   gh <- cl$auth$github$custom_mount("github2")
-  expect_is(gh, "vault_client_auth_github")
+  expect_s3_class(gh, "vault_client_auth_github")
 
   gh$configure(organization = "vimc")
   expect_equal(gh$configuration()$organization, "vimc")
@@ -15,7 +14,8 @@ test_that("custom mount", {
 
 
 test_that("github set policy: group", {
-  srv <- vault_test_server()
+  skip_if_no_vaultr_test_github_pat()
+  srv <- test_vault_test_server()
   cl <- srv$client()
   cl$auth$enable("github")
   cl$auth$github$configure(organization = "vimc")
@@ -26,8 +26,9 @@ test_that("github set policy: group", {
 })
 
 
-test_that("github set policy: group", {
-  srv <- vault_test_server()
+test_that("github set policy: user", {
+  skip_if_no_vaultr_test_github_pat()
+  srv <- test_vault_test_server()
   cl <- srv$client()
   cl$auth$enable("github")
   cl$auth$github$configure(organization = "vimc")
@@ -49,7 +50,7 @@ test_that("github auth", {
   skip_if_no_internet()
   gh_token <- vaultr_test_github_pat()
 
-  srv <- vault_test_server()
+  srv <- test_vault_test_server()
   cl <- srv$client()
 
   ## Set up a basic policy:
@@ -76,8 +77,8 @@ test_that("github auth", {
 
   ## Are we forbidden where expected:
   err <- tryCatch(cl2$write("secret/b", list(value = 1)), error = identity)
-  expect_is(err, "vault_error")
-  expect_is(err, "vault_forbidden")
+  expect_s3_class(err, "vault_error")
+  expect_s3_class(err, "vault_forbidden")
 })
 
 
@@ -100,7 +101,7 @@ test_that("github token", {
 
 
 test_that("missing github token", {
-  srv <- vault_test_server()
+  srv <- test_vault_test_server()
   cl <- srv$client()
 
   ## Configure github:

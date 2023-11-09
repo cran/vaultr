@@ -1,75 +1,3 @@
-context("server manager")
-
-test_that("safeguards for install", {
-  skip_on_cran()
-
-  withr::with_envvar(c(NOT_CRAN = NA_character_), {
-    expect_error(vault_test_server_install(),
-                 "Do not run this on CRAN")
-  })
-
-  withr::with_envvar(c(VAULTR_TEST_SERVER_INSTALL = NA_character_), {
-    expect_error(vault_test_server_install(),
-                 "Please read the documentation for vault_test_server_install")
-  })
-
-  withr::with_envvar(c(VAULTR_TEST_SERVER_INSTALL = "true",
-                       VAULTR_TEST_SERVER_BIN_PATH = NA_character_), {
-    expect_error(vault_test_server_install(),
-                 "VAULTR_TEST_SERVER_BIN_PATH is not set")
-  })
-})
-
-
-test_that("install", {
-  testthat::skip_on_cran()
-  skip_if_no_internet()
-
-  for (platform in c("windows", "darwin", "linux")) {
-    path <- tempfile()
-    vars <- c(VAULTR_TEST_SERVER_BIN_PATH = path,
-              VAULTR_TEST_SERVER_INSTALL = "true")
-    res <- withr::with_envvar(vars, {
-      vault_test_server_install(path = path,
-                                quiet = TRUE,
-                                platform = platform)
-    })
-
-    expect_equal(res, file.path(path, vault_exe_filename(platform)))
-    expect_true(file.exists(res))
-    expect_equal(dir(path), vault_exe_filename(platform))
-
-    if (platform == vault_platform()) {
-      expect_equal(substr(system2(res, "--version", stdout = TRUE), 1, 7),
-                   "Vault v")
-    }
-  }
-
-})
-
-
-test_that("reinstall", {
-  testthat::skip_on_cran()
-  skip_if_no_internet()
-
-  path <- tempfile()
-  vars <- c(VAULTR_TEST_SERVER_BIN_PATH = path,
-            VAULTR_TEST_SERVER_INSTALL = "true")
-
-  dir.create(path)
-
-  dest <- file.path(path, vault_exe_filename())
-  writeLines("vault executable", dest)
-  res <- withr::with_envvar(vars, {
-    expect_message(vault_test_server_install(path = path,
-                                             quiet = TRUE),
-                 "vault already installed at")
-  })
-
-  expect_identical(readLines(dest), "vault executable")
-})
-
-
 test_that("safeguards for run", {
   skip_on_cran()
 
@@ -82,12 +10,6 @@ test_that("safeguards for run", {
   })
 
   withr::with_envvar(c(VAULTR_TEST_SERVER_BIN_PATH = tempfile()), {
-    expect_null(vault_server_manager_bin())
-  })
-
-  path <- tempfile()
-  file.create(path)
-  withr::with_envvar(c(VAULTR_TEST_SERVER_BIN_PATH = path), {
     expect_null(vault_server_manager_bin())
   })
 
@@ -116,7 +38,46 @@ test_that("safeguards for run", {
 })
 
 
+test_that("allow use of directory containing a file vault", {
+  skip_on_cran()
+  skip_if_no_vault_bin()
+  path <- withr::local_tempdir()
+  exe <- file.path(path, vault_exe_filename())
+  file.create(exe)
+  withr::with_envvar(c(VAULTR_TEST_SERVER_BIN_PATH = path), {
+    expect_equal(vault_server_manager_bin(),
+                 normalizePath(exe))
+  })
+  withr::with_envvar(c(VAULTR_TEST_SERVER_BIN_PATH = exe), {
+    expect_equal(vault_server_manager_bin(),
+                 normalizePath(exe))
+  })
+})
+
+
+test_that("use value found by which if requested", {
+  skip_on_cran()
+  skip_if_no_vault_bin()
+  skip_if_not_installed("mockery")
+  path <- withr::local_tempdir()
+  exe <- file.path(path, vault_exe_filename())
+  file.create(exe)
+
+  mock_which <- mockery::mock(setNames(exe, "vault"), "")
+  mockery::stub(vault_server_manager_bin, "Sys.which", mock_which)
+
+  withr::with_envvar(c(VAULTR_TEST_SERVER_BIN_PATH = "auto"), {
+    ## First mock call finds path
+    expect_equal(vault_server_manager_bin(),
+                 normalizePath(exe))
+    ## Second mock call does not
+    expect_null(vault_server_manager_bin())
+  })
+})
+
+
 test_that("disabled server manager", {
+  skip_on_cran()
   res <- vault_server_manager$new(NULL)
   expect_false(res$enabled)
   expect_equal(res$new_server(if_disabled = identity),
@@ -127,6 +88,7 @@ test_that("disabled server manager", {
 
 
 test_that("timeout catch", {
+  skip_on_cran()
   test <- function() FALSE
   path <- tempfile()
   txt <- c("information about the process",
@@ -141,6 +103,7 @@ test_that("timeout catch", {
 
 
 test_that("vault_platform", {
+  skip_on_cran()
   expect_equal(vault_platform("Darwin"), "darwin")
   expect_equal(vault_platform("Windows"), "windows")
   expect_equal(vault_platform("Linux"), "linux")
@@ -149,7 +112,7 @@ test_that("vault_platform", {
 
 
 test_that("env", {
-  srv <- vault_test_server()
+  srv <- test_vault_test_server()
   env <- srv$env()
   expect_equal(env[["VAULT_ADDR"]], srv$addr)
   expect_equal(env[["VAULT_TOKEN"]], srv$token)
@@ -171,16 +134,39 @@ test_that("env", {
 
 
 test_that("clear tokens", {
-  srv <- vault_test_server()
+  srv <- test_vault_test_server()
   vault_env$cache$clear()
 
   cl <- srv$client()
   cl$auth$enable("userpass")
   cl$auth$userpass$write("alice", "password")
   cl2 <- srv$client(login = FALSE)
-  cl2$login(method = "userpass", username = "alice", password = "password")
+  cl2$login(method = "userpass", username = "alice", password = "password",
+            quiet = TRUE)
 
   expect_equal(vault_env$cache$list(), srv$addr)
   srv$clear_cached_token()
   expect_equal(vault_env$cache$list(), character(0))
+})
+
+
+test_that("skip if server does not come up", {
+  testthat::skip_on_cran()
+  testthat::skip_on_os("windows")
+  tmp <- withr::local_tempfile()
+  file.create(tmp)
+  port <- vault_server_manager_port() + 20
+  mgr <- vault_server_manager$new(tmp, port)
+  err <- tryCatch(mgr$new_server(),
+                  condition = identity)
+  expect_s3_class(err, "skip")
+  expect_match(err$message, "vault server failed to start")
+})
+
+
+test_that("correct exe on different platforms", {
+  skip_on_cran()
+  expect_equal(vault_exe_filename("windows"), "vault.exe")
+  expect_equal(vault_exe_filename("linux"), "vault")
+  expect_equal(vault_exe_filename("darwin"), "vault")
 })

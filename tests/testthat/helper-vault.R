@@ -1,8 +1,18 @@
 skip_if_no_vaultr_test_github_pat <- function() {
+  if (tolower(Sys.info()[["sysname"]]) == "darwin") {
+    # Fails with rate limit issues, quite tedious.
+    testthat::skip_on_ci()
+  }
   if (has_vaultr_test_github_pat()) {
     return(invisible(TRUE))
   }
   testthat::skip("No access token set")
+}
+
+
+test_vault_test_server <- function(..., quiet = TRUE) {
+  skip_on_cran()
+  vault_test_server(..., quiet = quiet)
 }
 
 has_vaultr_test_github_pat <- function() {
@@ -28,6 +38,15 @@ skip_if_no_internet <- function() {
     return()
   }
   testthat::skip("no internet")
+}
+
+
+skip_if_no_vault_bin <- function() {
+  path <- vault_server_manager_bin()
+  if (is.null(path)) {
+    testthat::skip("vault bin path not found")
+  }
+  testthat::skip_on_cran()
 }
 
 
@@ -69,6 +88,8 @@ fake_api_client <- function(addr, success) {
 
 
 wait_kv_upgrade <- function(kv, p, n = 50, poll = 0.2) { # max 10s by default
+  force(p)
+  force(kv)
   for (i in seq_len(n)) {
     ok <- tryCatch({
       kv$list(p)

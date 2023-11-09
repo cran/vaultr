@@ -1,5 +1,3 @@
-context("util")
-
 test_that("Sys_getenv", {
   expect_null(Sys_getenv("VAULTR_NONEXISTANT"))
 
@@ -41,7 +39,7 @@ test_that("free_port: failure", {
 
 
 test_that("free_port: used", {
-  srv <- vault_test_server()
+  srv <- test_vault_test_server()
   expect_false(check_port(srv$port))
 })
 
@@ -55,19 +53,11 @@ test_that("raw_data_input", {
 })
 
 
-test_that("dir_create throws on failure", {
-  p <- tempfile()
-  file.create(p)
-  expect_error(dir_create(p), "Failed to create directory '.+'")
-})
-
-test_that("copy failure", {
-  path1 <- tempfile()
-  path2 <- tempfile()
-  writeLines("a", path1)
-  writeLines("b", path2)
-  on.exit(file.remove(path1, path2))
-  expect_error(file_copy(path1, path2, overwrite = FALSE),
-               "Error copying files")
-  expect_equal(readLines(path2), "b")
+test_that("format lease", {
+  expect_equal(pretty_lease(10),
+               "ok, duration: 10 s (10s)")
+  expect_equal(pretty_lease(1000),
+               "ok, duration: 1000 s (~17m)")
+  expect_equal(pretty_lease(10000),
+               "ok, duration: 10000 s (~3h)")
 })
